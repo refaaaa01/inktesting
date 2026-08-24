@@ -76,7 +76,7 @@
     
     .panel-left {
       float: left;
-      width: 52%;
+      width: 50%;
       height: 100%;
       border: 3px solid #000000;
       border-radius: 6px;
@@ -85,7 +85,7 @@
 
     .panel-right {
       float: right;
-      width: 45%;
+      width: 47%;
       height: 100%;
       border: 3px solid #000000;
       border-radius: 6px;
@@ -105,15 +105,15 @@
     .train-item {
       list-style: none;
       border-bottom: 1px dashed #444444;
-      padding: 5px 0;
+      padding: 6px 0;
       font-size: 15px;
-      height: 32px;
-      line-height: 22px;
+      height: 36px;
+      line-height: 24px;
     }
     .route-badge {
       background-color: #000000;
       color: #ffffff;
-      padding: 1px 6px;
+      padding: 2px 6px;
       border-radius: 3px;
       font-weight: bold;
       font-size: 15px;
@@ -128,7 +128,7 @@
       font-size: 16px;
     }
 
-    /* Agenda 列表 */
+    /* 精簡 Agenda 列表，騰出大空間給圖片 */
     .agenda-item {
       list-style: none;
       border-left: 3px solid #000000;
@@ -144,22 +144,27 @@
       font-weight: bold;
     }
 
-    /* 圖片輪播區 */
+    /* 加大後的圖片輪播區 */
     .image-container {
       position: absolute;
       bottom: 8px;
       left: 10px;
       right: 10px;
-      height: 130px;
+      height: 200px; /* 大幅增加高度 */
       border-top: 2px dashed #000000;
-      padding-top: 6px;
+      padding-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
     }
     .dashboard-img {
       max-width: 100%;
-      max-height: 120px;
-      -webkit-filter: grayscale(100%);
-      filter: grayscale(100%);
+      max-height: 185px; /* 放大圖片限制 */
+      -webkit-filter: grayscale(100%) contrast(115%);
+      filter: grayscale(100%) contrast(115%);
+      display: block;
+      margin: 0 auto;
     }
 
     .footer-bar {
@@ -182,7 +187,7 @@
       </div>
       <div class="weather-box">
         <div class="temp" id="weather-temp">--°C</div>
-        <div class="weather-desc" id="weather-desc">更新中...</div>
+        <div class="weather-desc" id="weather-desc">連線中...</div>
       </div>
     </div>
 
@@ -192,7 +197,7 @@
       <div class="panel-left">
         <div class="panel-title">輕鐵即時班次（屯門碼頭）</div>
         <ul id="train-container" style="padding: 0;">
-          <li class="train-item">載入班次中...</li>
+          <li class="train-item">班次搜尋中...</li>
         </ul>
       </div>
 
@@ -208,12 +213,9 @@
             <div class="agenda-time">14:00 - 15:30</div>
             <div class="agenda-text">文檔本地化校對</div>
           </li>
-          <li class="agenda-item">
-            <div class="agenda-time">19:00</div>
-            <div class="agenda-text">住家晚飯 & 閱讀</div>
-          </li>
         </ul>
 
+        <!-- 大尺寸圖片展示區 -->
         <div class="image-container">
           <img id="slideshow-img" src="" alt="Slideshow" class="dashboard-img">
         </div>
@@ -226,11 +228,13 @@
   </div>
 
   <script>
-    // 0. 圖片陣列（使用純 ES5 語法）
+    // ====================================================
+    // 0. 圖片設定
+    // ====================================================
     var myImages = [
-      "img1.png",
-      "img2.png",
-      "img3.png"
+      "./img1.png",
+      "./img2.png",
+      "./img3.png"
     ];
     var currentImgIndex = 0;
     var slideImgElement = document.getElementById('slideshow-img');
@@ -243,40 +247,54 @@
     rotateImage();
     setInterval(rotateImage, 5000);
 
-    // 1. 本地時鐘
+    // ====================================================
+    // 1. 本地時鐘（強制轉換為香港時區 UTC+8）
+    // ====================================================
     function updateClock() {
-      var now = new Date();
-      var hours = ('0' + now.getHours()).slice(-2);
-      var minutes = ('0' + now.getMinutes()).slice(-2);
-      var seconds = ('0' + now.getSeconds()).slice(-2);
+      var d = new Date();
+      // 取得 UTC 毫秒數並加上 8 小時（8 * 3600 * 1000）
+      var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      var hkDate = new Date(utc + (3600000 * 8));
+
+      var hours = ('0' + hkDate.getHours()).slice(-2);
+      var minutes = ('0' + hkDate.getMinutes()).slice(-2);
+      var seconds = ('0' + hkDate.getSeconds()).slice(-2);
       document.getElementById('clock').innerHTML = hours + ':' + minutes;
 
       var days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-      var dateStr = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + days[now.getDay()];
+      var dateStr = hkDate.getFullYear() + '年' + (hkDate.getMonth() + 1) + '月' + hkDate.getDate() + '日 ' + days[hkDate.getDay()];
       document.getElementById('full-date').innerHTML = dateStr;
       document.getElementById('last-updated').innerHTML = hours + ':' + minutes + ':' + seconds;
     }
     updateClock();
     setInterval(updateClock, 1000);
 
-    // 2. 天氣 (XMLHttpRequest)
+    // ====================================================
+    // 2. 天氣 API（透過代理）
+    // ====================================================
     function fetchWeather() {
+      var targetUrl = encodeURIComponent('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc');
+      var proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
+
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', true);
+      xhr.open('GET', proxyUrl, true);
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             try {
-              var data = JSON.parse(xhr.responseText);
+              var response = JSON.parse(xhr.responseText);
+              var data = JSON.parse(response.contents);
               if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
                 document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
               }
               if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
                 document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
               }
-            } catch(e) {}
+            } catch(e) {
+              document.getElementById('weather-desc').innerHTML = '解析失敗';
+            }
           } else {
-            document.getElementById('weather-desc').innerHTML = '天氣載入失敗';
+            document.getElementById('weather-desc').innerHTML = '連線失敗';
           }
         }
       };
@@ -285,17 +303,23 @@
     fetchWeather();
     setInterval(fetchWeather, 300000);
 
-    // 3. 輕鐵即時班次
+    // ====================================================
+    // 3. 輕鐵 API（透過代理）
+    // ====================================================
     function fetchLightRail(stationId) {
       if (!stationId) stationId = '001';
+      var targetUrl = encodeURIComponent('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId);
+      var proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
+
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId, true);
+      xhr.open('GET', proxyUrl, true);
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           var container = document.getElementById('train-container');
           if (xhr.status === 200) {
             try {
-              var data = JSON.parse(xhr.responseText);
+              var response = JSON.parse(xhr.responseText);
+              var data = JSON.parse(response.contents);
               if (data.status === 1 && data.platform_list) {
                 var html = '';
                 var count = 0;
@@ -318,10 +342,10 @@
                 container.innerHTML = count > 0 ? html : '<li class="train-item">暫無即時班次</li>';
               }
             } catch(e) {
-              container.innerHTML = '<li class="train-item">解析班次失敗</li>';
+              container.innerHTML = '<li class="train-item">班次解析失敗</li>';
             }
           } else {
-            container.innerHTML = '<li class="train-item">輕鐵資料載入失敗</li>';
+            container.innerHTML = '<li class="train-item">輕鐵連線失敗</li>';
           }
         }
       };
