@@ -74,15 +74,24 @@
       height: 410px;
     }
     
+    /* 左側面板：輕鐵 + 巴士 */
     .panel-left {
       float: left;
       width: 50%;
       height: 100%;
-      border: 3px solid #000000;
-      border-radius: 6px;
-      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
+    .sub-panel {
+      border: 3px solid #000000;
+      border-radius: 6px;
+      padding: 8px 10px;
+      height: 195px;
+    }
+
+    /* 右側面板：Agenda + 圖片 */
     .panel-right {
       float: right;
       width: 47%;
@@ -94,29 +103,42 @@
     }
 
     .panel-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: bold;
       border-bottom: 2px solid #000000;
       padding-bottom: 4px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     
-    /* 輕鐵列表 */
-    .train-item {
+    /* 交通班次列表 */
+    .transit-list {
       list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .transit-item {
       border-bottom: 1px dashed #444444;
-      padding: 6px 0;
-      font-size: 15px;
-      height: 36px;
+      padding: 4px 0;
+      font-size: 14px;
+      height: 32px;
       line-height: 24px;
     }
-    .route-badge {
+    .badge {
       background-color: #000000;
       color: #ffffff;
-      padding: 2px 6px;
+      padding: 1px 5px;
       border-radius: 3px;
       font-weight: bold;
-      font-size: 15px;
+      font-size: 14px;
+    }
+    .bus-badge {
+      background-color: #ffffff;
+      color: #000000;
+      border: 2px solid #000000;
+      padding: 0px 4px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-size: 13px;
     }
     .dest {
       font-weight: bold;
@@ -125,7 +147,7 @@
     .eta {
       float: right;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     /* Agenda 列表 */
@@ -153,9 +175,6 @@
       height: 200px;
       border-top: 2px dashed #000000;
       padding-top: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       text-align: center;
     }
     .dashboard-img {
@@ -193,12 +212,23 @@
 
     <!-- 中間主要內容 -->
     <div class="main-content">
-      <!-- 左側輕鐵 -->
+      <!-- 左側：輕鐵 + 巴士 -->
       <div class="panel-left">
-        <div class="panel-title">輕鐵即時班次（屯門碼頭）</div>
-        <ul id="train-container" style="padding: 0;">
-          <li class="train-item">班次搜尋中...</li>
-        </ul>
+        <!-- 輕鐵 -->
+        <div class="sub-panel">
+          <div class="panel-title">輕鐵即時班次（屯門碼頭）</div>
+          <ul id="train-container" class="transit-list">
+            <li class="transit-item">班次搜尋中...</li>
+          </ul>
+        </div>
+
+        <!-- 巴士 (59M/59X 屯門碼頭開出) -->
+        <div class="sub-panel" style="margin-top: 10px;">
+          <div class="panel-title">九巴即時班次（屯門碼頭總站）</div>
+          <ul id="bus-container" class="transit-list">
+            <li class="transit-item">班次搜尋中...</li>
+          </ul>
+        </div>
       </div>
 
       <!-- 右側 Agenda 與圖片 -->
@@ -228,7 +258,7 @@
 
   <script>
     // ====================================================
-    // 0. 圖片設定
+    // 0. 圖片輪播設定
     // ====================================================
     var myImages = [
       "./img1.png",
@@ -268,62 +298,28 @@
     setInterval(updateClock, 1000);
 
     // ====================================================
-    // 2. 通用高可用請求函數（自動 Fallback 代理）
+    // 2. 通用抓取 (使用 AllOrigins 專屬解析)
     // ====================================================
-    function requestWithFallback(targetUrl, successCallback, failCallback) {
-      // 代理 A：CorsProxy.io (極快且直接回傳 JSON)
-      var proxyA = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
-      var xhrA = new XMLHttpRequest();
-      xhrA.open('GET', proxyA, true);
-      xhrA.timeout = 6000;
-
-      xhrA.onreadystatechange = function() {
-        if (xhrA.readyState === 4) {
-          if (xhrA.status === 200) {
-            try {
-              var data = JSON.parse(xhrA.responseText);
-              successCallback(data);
-              return;
-            } catch(e) {}
-          }
-          // 若代理 A 失敗，嘗試代理 B：AllOrigins
-          useFallbackB();
+    function fetchJSON(url, callback) {
+      var proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', proxy, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            callback(data);
+          } catch(e) {}
         }
       };
-      xhrA.ontimeout = useFallbackB;
-      xhrA.onerror = useFallbackB;
-      xhrA.send();
-
-      function useFallbackB() {
-        var proxyB = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
-        var xhrB = new XMLHttpRequest();
-        xhrB.open('GET', proxyB, true);
-        xhrB.timeout = 8000;
-        xhrB.onreadystatechange = function() {
-          if (xhrB.readyState === 4) {
-            if (xhrB.status === 200) {
-              try {
-                var res = JSON.parse(xhrB.responseText);
-                var data = JSON.parse(res.contents);
-                successCallback(data);
-                return;
-              } catch(e) {}
-            }
-            if (failCallback) failCallback();
-          }
-        };
-        xhrB.ontimeout = function() { if (failCallback) failCallback(); };
-        xhrB.onerror = function() { if (failCallback) failCallback(); };
-        xhrB.send();
-      }
+      xhr.send();
     }
 
     // ====================================================
     // 3. 天氣 API
     // ====================================================
     function fetchWeather() {
-      var weatherUrl = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc';
-      requestWithFallback(weatherUrl, function(data) {
+      fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
         if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
           document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
         }
@@ -336,14 +332,11 @@
     setInterval(fetchWeather, 300000);
 
     // ====================================================
-    // 4. 輕鐵 API
+    // 4. 輕鐵 API（顯示 3 班，節省空間給巴士）
     // ====================================================
-    function fetchLightRail(stationId) {
-      if (!stationId) stationId = '001';
-      var railUrl = 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId;
-      var container = document.getElementById('train-container');
-
-      requestWithFallback(railUrl, function(data) {
+    function fetchLightRail() {
+      fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
+        var container = document.getElementById('train-container');
         if (data.status === 1 && data.platform_list) {
           var html = '';
           var count = 0;
@@ -351,11 +344,11 @@
             var p = data.platform_list[i];
             if (p.route_list) {
               for (var j = 0; j < p.route_list.length; j++) {
-                if (count >= 5) break;
+                if (count >= 3) break;
                 var train = p.route_list[j];
                 var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
-                html += '<li class="train-item">' +
-                  '<span class="route-badge">' + train.route_no + '</span>' +
+                html += '<li class="transit-item">' +
+                  '<span class="badge">' + train.route_no + '</span>' +
                   '<span class="dest">' + train.dest_ch + '</span>' +
                   '<span class="eta">' + eta + '</span>' +
                   '</li>';
@@ -363,14 +356,47 @@
               }
             }
           }
-          if (count > 0) {
-            container.innerHTML = html;
-          }
+          if (count > 0) container.innerHTML = html;
         }
       });
     }
-    fetchLightRail('001');
-    setInterval(function() { fetchLightRail('001'); }, 30000);
+    fetchLightRail();
+    setInterval(fetchLightRail, 30000);
+
+    // ====================================================
+    // 5. 九巴 API（屯門碼頭總站 59M / 59X 開出）
+    // ====================================================
+    function fetchBus() {
+      // 屯門碼頭總站 Stop ID: TU03-T-1000-0
+      fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/TU03-T-1000-0', function(res) {
+        var container = document.getElementById('bus-container');
+        if (res && res.data) {
+          var html = '';
+          var count = 0;
+          var nowTime = new Date().getTime();
+
+          for (var i = 0; i < res.data.length; i++) {
+            var item = res.data[i];
+            // 只取 59M 及 59X 的最近班次
+            if ((item.route === '59M' || item.route === '59X') && item.eta && count < 3) {
+              var etaTime = new Date(item.eta).getTime();
+              var diffMin = Math.round((etaTime - nowTime) / 60000);
+              var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
+
+              html += '<li class="transit-item">' +
+                '<span class="bus-badge">' + item.route + '</span>' +
+                '<span class="dest">' + item.dest_tc + '</span>' +
+                '<span class="eta">' + etaText + '</span>' +
+                '</li>';
+              count++;
+            }
+          }
+          if (count > 0) container.innerHTML = html;
+        }
+      });
+    }
+    fetchBus();
+    setInterval(fetchBus, 45000);
   </script>
 </body>
 </html>
