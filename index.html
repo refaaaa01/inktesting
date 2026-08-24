@@ -128,7 +128,7 @@
       font-size: 16px;
     }
 
-    /* 精簡 Agenda 列表，騰出大空間給圖片 */
+    /* Agenda 列表 */
     .agenda-item {
       list-style: none;
       border-left: 3px solid #000000;
@@ -144,13 +144,13 @@
       font-weight: bold;
     }
 
-    /* 加大後的圖片輪播區 */
+    /* 圖片輪播區 */
     .image-container {
       position: absolute;
       bottom: 8px;
       left: 10px;
       right: 10px;
-      height: 200px; /* 大幅增加高度 */
+      height: 200px;
       border-top: 2px dashed #000000;
       padding-top: 8px;
       display: flex;
@@ -160,7 +160,7 @@
     }
     .dashboard-img {
       max-width: 100%;
-      max-height: 185px; /* 放大圖片限制 */
+      max-height: 185px;
       -webkit-filter: grayscale(100%) contrast(115%);
       filter: grayscale(100%) contrast(115%);
       display: block;
@@ -215,7 +215,6 @@
           </li>
         </ul>
 
-        <!-- 大尺寸圖片展示區 -->
         <div class="image-container">
           <img id="slideshow-img" src="" alt="Slideshow" class="dashboard-img">
         </div>
@@ -248,11 +247,10 @@
     setInterval(rotateImage, 5000);
 
     // ====================================================
-    // 1. 本地時鐘（強制轉換為香港時區 UTC+8）
+    // 1. 香港時區時鐘（UTC+8）
     // ====================================================
     function updateClock() {
       var d = new Date();
-      // 取得 UTC 毫秒數並加上 8 小時（8 * 3600 * 1000）
       var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
       var hkDate = new Date(utc + (3600000 * 8));
 
@@ -270,86 +268,106 @@
     setInterval(updateClock, 1000);
 
     // ====================================================
-    // 2. 天氣 API（透過代理）
+    // 2. 通用高可用請求函數（自動 Fallback 代理）
     // ====================================================
-    function fetchWeather() {
-      var targetUrl = encodeURIComponent('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc');
-      var proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
+    function requestWithFallback(targetUrl, successCallback, failCallback) {
+      // 代理 A：CorsProxy.io (極快且直接回傳 JSON)
+      var proxyA = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
+      var xhrA = new XMLHttpRequest();
+      xhrA.open('GET', proxyA, true);
+      xhrA.timeout = 6000;
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', proxyUrl, true);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
+      xhrA.onreadystatechange = function() {
+        if (xhrA.readyState === 4) {
+          if (xhrA.status === 200) {
             try {
-              var response = JSON.parse(xhr.responseText);
-              var data = JSON.parse(response.contents);
-              if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
-                document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
-              }
-              if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
-                document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
-              }
-            } catch(e) {
-              document.getElementById('weather-desc').innerHTML = '解析失敗';
-            }
-          } else {
-            document.getElementById('weather-desc').innerHTML = '連線失敗';
+              var data = JSON.parse(xhrA.responseText);
+              successCallback(data);
+              return;
+            } catch(e) {}
           }
+          // 若代理 A 失敗，嘗試代理 B：AllOrigins
+          useFallbackB();
         }
       };
-      xhr.send();
+      xhrA.ontimeout = useFallbackB;
+      xhrA.onerror = useFallbackB;
+      xhrA.send();
+
+      function useFallbackB() {
+        var proxyB = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+        var xhrB = new XMLHttpRequest();
+        xhrB.open('GET', proxyB, true);
+        xhrB.timeout = 8000;
+        xhrB.onreadystatechange = function() {
+          if (xhrB.readyState === 4) {
+            if (xhrB.status === 200) {
+              try {
+                var res = JSON.parse(xhrB.responseText);
+                var data = JSON.parse(res.contents);
+                successCallback(data);
+                return;
+              } catch(e) {}
+            }
+            if (failCallback) failCallback();
+          }
+        };
+        xhrB.ontimeout = function() { if (failCallback) failCallback(); };
+        xhrB.onerror = function() { if (failCallback) failCallback(); };
+        xhrB.send();
+      }
+    }
+
+    // ====================================================
+    // 3. 天氣 API
+    // ====================================================
+    function fetchWeather() {
+      var weatherUrl = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc';
+      requestWithFallback(weatherUrl, function(data) {
+        if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
+          document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
+        }
+        if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
+          document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
+        }
+      });
     }
     fetchWeather();
     setInterval(fetchWeather, 300000);
 
     // ====================================================
-    // 3. 輕鐵 API（透過代理）
+    // 4. 輕鐵 API
     // ====================================================
     function fetchLightRail(stationId) {
       if (!stationId) stationId = '001';
-      var targetUrl = encodeURIComponent('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId);
-      var proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
+      var railUrl = 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId;
+      var container = document.getElementById('train-container');
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', proxyUrl, true);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-          var container = document.getElementById('train-container');
-          if (xhr.status === 200) {
-            try {
-              var response = JSON.parse(xhr.responseText);
-              var data = JSON.parse(response.contents);
-              if (data.status === 1 && data.platform_list) {
-                var html = '';
-                var count = 0;
-                for (var i = 0; i < data.platform_list.length; i++) {
-                  var p = data.platform_list[i];
-                  if (p.route_list) {
-                    for (var j = 0; j < p.route_list.length; j++) {
-                      if (count >= 5) break;
-                      var train = p.route_list[j];
-                      var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
-                      html += '<li class="train-item">' +
-                        '<span class="route-badge">' + train.route_no + '</span>' +
-                        '<span class="dest">' + train.dest_ch + '</span>' +
-                        '<span class="eta">' + eta + '</span>' +
-                        '</li>';
-                      count++;
-                    }
-                  }
-                }
-                container.innerHTML = count > 0 ? html : '<li class="train-item">暫無即時班次</li>';
+      requestWithFallback(railUrl, function(data) {
+        if (data.status === 1 && data.platform_list) {
+          var html = '';
+          var count = 0;
+          for (var i = 0; i < data.platform_list.length; i++) {
+            var p = data.platform_list[i];
+            if (p.route_list) {
+              for (var j = 0; j < p.route_list.length; j++) {
+                if (count >= 5) break;
+                var train = p.route_list[j];
+                var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
+                html += '<li class="train-item">' +
+                  '<span class="route-badge">' + train.route_no + '</span>' +
+                  '<span class="dest">' + train.dest_ch + '</span>' +
+                  '<span class="eta">' + eta + '</span>' +
+                  '</li>';
+                count++;
               }
-            } catch(e) {
-              container.innerHTML = '<li class="train-item">班次解析失敗</li>';
             }
-          } else {
-            container.innerHTML = '<li class="train-item">輕鐵連線失敗</li>';
+          }
+          if (count > 0) {
+            container.innerHTML = html;
           }
         }
-      };
-      xhr.send();
+      });
     }
     fetchLightRail('001');
     setInterval(function() { fetchLightRail('001'); }, 30000);
