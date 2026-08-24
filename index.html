@@ -152,14 +152,14 @@
       list-style: none;
       border-left: 5px solid #000000;
       padding-left: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .agenda-time {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
     }
     .agenda-text {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: bold;
     }
 
@@ -211,19 +211,33 @@
     <div class="main-content">
       <!-- 左側：輕鐵 + 巴士 -->
       <div class="panel-left">
-        <!-- 輕鐵：即將開出最近 4 班 -->
+        <!-- 輕鐵 -->
         <div class="sub-panel">
-          <div class="panel-title">輕鐵即時班次（最近 4 班）</div>
+          <div class="panel-title">輕鐵即時班次（最快 4 班）</div>
           <ul id="train-container" class="transit-list">
             <li class="transit-item">班次搜尋中...</li>
           </ul>
         </div>
 
-        <!-- 巴士：506 / 59X / 259B -->
+        <!-- 巴士：59X / 59M / 59A -->
         <div class="sub-panel" style="margin-top: 16px;">
-          <div class="panel-title">巴士即時班次（506 / 59X / 259B）</div>
+          <div class="panel-title">九巴即時班次（屯門碼頭總站）</div>
           <ul id="bus-container" class="transit-list">
-            <li class="transit-item">班次搜尋中...</li>
+            <li class="transit-item">
+              <span class="bus-badge">59X</span>
+              <span class="dest">旺角東站</span>
+              <span class="eta" id="eta-59x">搜尋中...</span>
+            </li>
+            <li class="transit-item">
+              <span class="bus-badge">59M</span>
+              <span class="dest">荃灣站</span>
+              <span class="eta" id="eta-59m">搜尋中...</span>
+            </li>
+            <li class="transit-item">
+              <span class="bus-badge">59A</span>
+              <span class="dest">葵涌葵翠邨</span>
+              <span class="eta" id="eta-59a">搜尋中...</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -231,14 +245,9 @@
       <!-- 右側 Agenda 與圖片 -->
       <div class="panel-right">
         <div class="panel-title">今日行程 (Agenda)</div>
-        <ul style="padding: 0;">
+        <ul id="agenda-container" style="padding: 0;">
           <li class="agenda-item">
-            <div class="agenda-time">09:30 - 10:30</div>
-            <div class="agenda-text">團隊早會 / 項目同步</div>
-          </li>
-          <li class="agenda-item">
-            <div class="agenda-time">14:00 - 15:30</div>
-            <div class="agenda-text">文檔本地化校對</div>
+            <div class="agenda-text">日曆同步中...</div>
           </li>
         </ul>
 
@@ -293,14 +302,11 @@
     setInterval(updateClock, 1000);
 
     // ====================================================
-    // 2. 通用請求工具 (支援 GET / POST)
+    // 2. 通用請求工具
     // ====================================================
-    function fetchAPI(method, url, body, callback) {
+    function fetchJSON(url, callback) {
       var xhr = new XMLHttpRequest();
-      xhr.open(method, url, true);
-      if (method === 'POST') {
-        xhr.setRequestHeader('Content-Type', 'application/json');
-      }
+      xhr.open('GET', url, true);
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
           try {
@@ -309,14 +315,14 @@
           } catch(e) {}
         }
       };
-      xhr.send(body ? JSON.stringify(body) : null);
+      xhr.send();
     }
 
     // ====================================================
-    // 3. 香港天文台天氣
+    // 3. 香港天文台天氣 API
     // ====================================================
     function updateWeather() {
-      fetchAPI('GET', 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', null, function(data) {
+      fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
         if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
           document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
         }
@@ -329,10 +335,10 @@
     setInterval(updateWeather, 180000);
 
     // ====================================================
-    // 4. 輕鐵即時班次（由最快到最慢排序，顯示前 4 班）
+    // 4. 輕鐵即時班次（按最快出發排序，顯示最近 4 班）
     // ====================================================
     function updateLightRail() {
-      fetchAPI('GET', 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', null, function(data) {
+      fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
         var container = document.getElementById('train-container');
         if (data.status === 1 && data.platform_list) {
           var allTrains = [];
@@ -341,7 +347,6 @@
             if (p.route_list) {
               for (var j = 0; j < p.route_list.length; j++) {
                 var train = p.route_list[j];
-                // 計算數值分鐘以供精確排序
                 var minNum = 0;
                 if (train.time_en !== '-') {
                   var m = parseInt(train.time_ch, 10);
@@ -357,12 +362,10 @@
             }
           }
 
-          // 按最快開出排序（由小到大）
           allTrains.sort(function(a, b) {
             return a.min - b.min;
           });
 
-          // 取最近 4 班
           var html = '';
           for (var k = 0; k < Math.min(4, allTrains.length); k++) {
             var t = allTrains[k];
@@ -380,115 +383,137 @@
     setInterval(updateLightRail, 15000);
 
     // ====================================================
-    // 5. 巴士即時班次（港鐵巴士 506 + 九巴 59X / 259B）
+    // 5. 九巴即時班次（59X / 59M / 59A 各自獨立計算）
     // ====================================================
-    function updateBuses() {
-      var busResults = [];
-      var expectedTasks = 3;
-      var finished = 0;
-      var nowTime = new Date().getTime();
+    function parseBusETA(route, elemId) {
+      fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/' + route + '/1', function(res) {
+        var targetElem = document.getElementById(elemId);
+        if (!targetElem) return;
 
-      function checkAndRender() {
-        finished++;
-        if (finished >= expectedTasks) {
-          // 按剩餘分鐘數由近到遠排序
-          busResults.sort(function(a, b) {
-            return a.diffMin - b.diffMin;
-          });
+        if (res && res.data) {
+          var nowTime = new Date().getTime();
+          var nearestMin = null;
 
-          var container = document.getElementById('bus-container');
-          var html = '';
-          for (var i = 0; i < Math.min(4, busResults.length); i++) {
-            var b = busResults[i];
-            var etaText = b.diffMin <= 1 ? '即將開出' : b.diffMin + ' 分鐘';
-            html += '<li class="transit-item">' +
-              '<span class="bus-badge">' + b.route + '</span>' +
-              '<span class="dest">' + b.dest + '</span>' +
-              '<span class="eta">' + etaText + '</span>' +
-              '</li>';
-          }
-          container.innerHTML = html !== '' ? html : '<li class="transit-item">暫無即時班次</li>';
-        }
-      }
-
-      // (1) 港鐵巴士 506 官方 API
-      fetchAPI('POST', 'https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule', {
-        language: 'zh',
-        routeName: '506'
-      }, function(res) {
-        if (res && res.busStop) {
-          for (var i = 0; i < res.busStop.length; i++) {
-            var stop = res.busStop[i];
-            // 屯門碼頭總站
-            if (stop.busStopId === '506-T1' || stop.busStopId === '506-01' || i === 0) {
-              if (stop.bus) {
-                for (var j = 0; j < stop.bus.length; j++) {
-                  var bItem = stop.bus[j];
-                  if (bItem.arrivalTime) {
-                    var etaMs = new Date(bItem.arrivalTime).getTime();
-                    var diff = Math.round((etaMs - nowTime) / 60000);
-                    if (diff >= 0) {
-                      busResults.push({
-                        route: '506',
-                        dest: '兆麟',
-                        diffMin: diff
-                      });
-                    }
-                  }
+          for (var i = 0; i < res.data.length; i++) {
+            var item = res.data[i];
+            if (item.eta && (item.dir === 'outbound' || item.dir === 'O' || item.seq === 1)) {
+              var etaMs = new Date(item.eta).getTime();
+              var diff = Math.round((etaMs - nowTime) / 60000);
+              if (diff >= 0) {
+                if (nearestMin === null || diff < nearestMin) {
+                  nearestMin = diff;
                 }
               }
-              break;
             }
           }
-        }
-        checkAndRender();
-      });
 
-      // (2) 九巴 59X
-      fetchAPI('GET', 'https://data.etabus.gov.hk/v1/transport/kmb/route-eta/59X/1', null, function(res) {
-        if (res && res.data) {
-          for (var i = 0; i < res.data.length; i++) {
-            var item = res.data[i];
-            if (item.eta && (item.dir === 'outbound' || item.dir === 'O' || item.seq === 1)) {
-              var etaMs = new Date(item.eta).getTime();
-              var diff = Math.round((etaMs - nowTime) / 60000);
-              if (diff >= 0) {
-                busResults.push({
-                  route: '59X',
-                  dest: '旺角東站',
-                  diffMin: diff
-                });
-              }
-            }
+          if (nearestMin !== null) {
+            targetElem.innerHTML = nearestMin <= 1 ? '即將開出' : nearestMin + ' 分鐘';
+          } else {
+            targetElem.innerHTML = '非服務時間';
           }
         }
-        checkAndRender();
-      });
-
-      // (3) 九巴 259B
-      fetchAPI('GET', 'https://data.etabus.gov.hk/v1/transport/kmb/route-eta/259B/1', null, function(res) {
-        if (res && res.data) {
-          for (var i = 0; i < res.data.length; i++) {
-            var item = res.data[i];
-            if (item.eta && (item.dir === 'outbound' || item.dir === 'O' || item.seq === 1)) {
-              var etaMs = new Date(item.eta).getTime();
-              var diff = Math.round((etaMs - nowTime) / 60000);
-              if (diff >= 0) {
-                busResults.push({
-                  route: '259B',
-                  dest: '九龍站',
-                  diffMin: diff
-                });
-              }
-            }
-          }
-        }
-        checkAndRender();
       });
     }
 
-    updateBuses();
-    setInterval(updateBuses, 15000);
+    function updateAllBuses() {
+      parseBusETA('59X', 'eta-59x');
+      parseBusETA('59M', 'eta-59m');
+      parseBusETA('59A', 'eta-59a');
+    }
+    updateAllBuses();
+    setInterval(updateAllBuses, 15000);
+
+    // ====================================================
+    // 6. Google 日曆 iCal 即時同步模組
+    // ====================================================
+    var icalUrl = "https://calendar.google.com/calendar/ical/mtygwcc%40gmail.com/public/basic.ics";
+
+    function updateCalendar() {
+      var proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(icalUrl);
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', proxy, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          parseCalendarICS(xhr.responseText);
+        }
+      };
+      xhr.send();
+    }
+
+    function parseCalendarICS(text) {
+      var d = new Date();
+      var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      var hkDate = new Date(utc + (3600000 * 8));
+
+      var y = hkDate.getFullYear();
+      var m = ('0' + (hkDate.getMonth() + 1)).slice(-2);
+      var dateNum = ('0' + hkDate.getDate()).slice(-2);
+      var todayStr = '' + y + m + dateNum;
+
+      var lines = text.split(/\r\n|\n|\r/);
+      var events = [];
+      var cur = null;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (line.indexOf('BEGIN:VEVENT') === 0) {
+          cur = {};
+        } else if (line.indexOf('END:VEVENT') === 0) {
+          if (cur && cur.summary && cur.dtstart) {
+            if (cur.dtstart.indexOf(todayStr) !== -1) {
+              events.push(cur);
+            }
+          }
+          cur = null;
+        } else if (cur) {
+          if (line.indexOf('SUMMARY:') === 0) {
+            cur.summary = line.substring(8);
+          } else if (line.indexOf('DTSTART') === 0) {
+            var val = line.split(':')[1];
+            cur.dtstart = val;
+            if (val && val.indexOf('T') !== -1) {
+              var timeStr = val.split('T')[1];
+              var hh = parseInt(timeStr.substring(0, 2), 10);
+              var mm = timeStr.substring(2, 4);
+              if (val.indexOf('Z') !== -1) {
+                hh = (hh + 8) % 24;
+              }
+              cur.timeText = ('0' + hh).slice(-2) + ':' + mm;
+            } else {
+              cur.timeText = '全天';
+            }
+          }
+        }
+      }
+
+      renderCalendarAgenda(events);
+    }
+
+    function renderCalendarAgenda(events) {
+      var container = document.getElementById('agenda-container');
+      if (!events || events.length === 0) {
+        container.innerHTML = '<li class="agenda-item"><div class="agenda-text">今日暫無行程</div></li>';
+        return;
+      }
+
+      events.sort(function(a, b) {
+        return (a.timeText || '').localeCompare(b.timeText || '');
+      });
+
+      var html = '';
+      for (var i = 0; i < Math.min(3, events.length); i++) {
+        var ev = events[i];
+        html += '<li class="agenda-item">' +
+          '<div class="agenda-time">' + ev.timeText + '</div>' +
+          '<div class="agenda-text">' + ev.summary + '</div>' +
+          '</li>';
+      }
+      container.innerHTML = html;
+    }
+
+    updateCalendar();
+    setInterval(updateCalendar, 300000); // 5 分鐘同步一次日曆
   </script>
 </body>
 </html>
