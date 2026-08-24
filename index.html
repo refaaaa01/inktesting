@@ -1,10 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <!-- 每 20 秒極速硬重整，趕車零延遲 -->
-  <meta http-equiv="refresh" content="20">
-  <meta name="viewport" content="width=1448, user-scalable=no">
+  <meta name="viewport" content="width=1280, user-scalable=no">
   <title>E-Paper Dashboard</title>
   <style>
     * {
@@ -23,57 +22,57 @@
       font-family: sans-serif;
     }
 
-    /* 適配 Kindle 橫向高解析度滿版尺寸 (1380px x 1000px) */
+    /* Kindle 適配尺寸 (1200px x 840px)，預留安全邊距避免網址列遮擋 */
     .dashboard-wrapper {
       position: absolute;
-      top: 0;
+      top: 10px;
       left: 100%;
-      width: 1380px;
-      height: 1000px;
+      width: 1200px;
+      height: 840px;
       -webkit-transform-origin: 0 0;
       transform-origin: 0 0;
       -webkit-transform: rotate(90deg);
       transform: rotate(90deg);
-      padding: 30px;
+      padding: 20px 24px;
     }
 
     .header-bar {
-      border-bottom: 6px solid #000000;
-      padding-bottom: 16px;
-      height: 120px;
+      border-bottom: 5px solid #000000;
+      padding-bottom: 10px;
+      height: 95px;
     }
     .date-time {
       float: left;
     }
     .time {
-      font-size: 76px;
+      font-size: 60px;
       font-weight: 900;
       line-height: 1;
     }
     .date {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: bold;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .weather-box {
       float: right;
       text-align: right;
     }
     .temp {
-      font-size: 72px;
+      font-size: 56px;
       font-weight: 900;
       line-height: 1;
     }
     .weather-desc {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: bold;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     .main-content {
       clear: both;
-      margin-top: 24px;
-      height: 780px;
+      margin-top: 16px;
+      height: 680px;
     }
     
     /* 左側面板：輕鐵 + 巴士 */
@@ -84,10 +83,10 @@
     }
 
     .sub-panel {
-      border: 5px solid #000000;
-      border-radius: 12px;
-      padding: 16px 20px;
-      height: 375px;
+      border: 4px solid #000000;
+      border-radius: 10px;
+      padding: 12px 16px;
+      height: 325px;
     }
 
     /* 右側面板：Agenda + 圖片 */
@@ -95,18 +94,18 @@
       float: right;
       width: 47%;
       height: 100%;
-      border: 5px solid #000000;
-      border-radius: 12px;
-      padding: 16px 20px;
+      border: 4px solid #000000;
+      border-radius: 10px;
+      padding: 12px 16px;
       position: relative;
     }
 
     .panel-title {
-      font-size: 30px;
+      font-size: 24px;
       font-weight: 900;
       border-bottom: 3px solid #000000;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
     }
     
     /* 交通班次列表 */
@@ -116,69 +115,69 @@
       margin: 0;
     }
     .transit-item {
-      border-bottom: 2px dashed #444444;
-      padding: 8px 0;
-      font-size: 26px;
-      height: 64px;
-      line-height: 48px;
+      border-bottom: 2px dashed #666666;
+      padding: 6px 0;
+      font-size: 22px;
+      height: 52px;
+      line-height: 40px;
     }
     .badge {
       background-color: #000000;
       color: #ffffff;
-      padding: 2px 10px;
-      border-radius: 6px;
+      padding: 2px 8px;
+      border-radius: 5px;
       font-weight: 900;
-      font-size: 26px;
+      font-size: 22px;
     }
     .bus-badge {
       background-color: #ffffff;
       color: #000000;
       border: 3px solid #000000;
-      padding: 0px 8px;
-      border-radius: 6px;
+      padding: 0px 6px;
+      border-radius: 5px;
       font-weight: 900;
-      font-size: 24px;
+      font-size: 20px;
     }
     .dest {
       font-weight: bold;
-      margin-left: 10px;
+      margin-left: 8px;
     }
     .eta {
       float: right;
       font-weight: 900;
-      font-size: 28px;
+      font-size: 22px;
     }
 
     /* Agenda 列表 */
     .agenda-item {
       list-style: none;
-      border-left: 6px solid #000000;
-      padding-left: 12px;
-      margin-bottom: 12px;
+      border-left: 5px solid #000000;
+      padding-left: 10px;
+      margin-bottom: 10px;
     }
     .agenda-time {
-      font-size: 20px;
+      font-size: 16px;
       font-weight: bold;
     }
     .agenda-text {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: bold;
     }
 
     /* 圖片展示區 */
     .image-container {
       position: absolute;
-      bottom: 16px;
-      left: 16px;
-      right: 16px;
-      height: 400px;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      height: 380px;
       border-top: 3px dashed #000000;
-      padding-top: 16px;
+      padding-top: 10px;
       text-align: center;
     }
     .dashboard-img {
       max-width: 100%;
-      max-height: 380px;
+      max-height: 360px;
       -webkit-filter: grayscale(100%) contrast(120%);
       filter: grayscale(100%) contrast(120%);
       display: block;
@@ -187,9 +186,9 @@
 
     .footer-bar {
       position: absolute;
-      bottom: 8px;
-      right: 30px;
-      font-size: 18px;
+      bottom: 6px;
+      right: 24px;
+      font-size: 14px;
       font-weight: bold;
     }
   </style>
@@ -222,8 +221,8 @@
         </div>
 
         <!-- 巴士 -->
-        <div class="sub-panel" style="margin-top: 20px;">
-          <div class="panel-title">九巴即時班次（屯門碼頭開出）</div>
+        <div class="sub-panel" style="margin-top: 18px;">
+          <div class="panel-title">九巴即時班次（屯門碼頭總站）</div>
           <ul id="bus-container" class="transit-list">
             <li class="transit-item">班次搜尋中...</li>
           </ul>
@@ -251,36 +250,52 @@
     </div>
 
     <div class="footer-bar">
-      更新時間：<span id="last-updated">--:--:--</span>
+      最後更新：<span id="last-updated">--:--:--</span>
     </div>
   </div>
 
   <script>
-    // 0. 圖片隨機展示
+    // ====================================================
+    // 0. 圖片輪播（每 10 秒平滑切換一張，無須刷新整個頁面）
+    // ====================================================
     var myImages = [
       "./img1.png",
       "./img2.png",
       "./img3.png"
     ];
-    var randomIdx = Math.floor(Math.random() * myImages.length);
-    document.getElementById('dashboard-img').src = myImages[randomIdx];
+    var currentImgIdx = 0;
+    function rotateImg() {
+      if (myImages.length === 0) return;
+      document.getElementById('dashboard-img').src = myImages[currentImgIdx];
+      currentImgIdx = (currentImgIdx + 1) % myImages.length;
+    }
+    rotateImg();
+    setInterval(rotateImg, 10000);
 
-    // 1. 香港時區時鐘（UTC+8）
-    var d = new Date();
-    var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-    var hkDate = new Date(utc + (3600000 * 8));
+    // ====================================================
+    // 1. 香港時區時鐘（UTC+8，每秒在頁面上直接跳動）
+    // ====================================================
+    function updateClock() {
+      var d = new Date();
+      var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      var hkDate = new Date(utc + (3600000 * 8));
 
-    var hours = ('0' + hkDate.getHours()).slice(-2);
-    var minutes = ('0' + hkDate.getMinutes()).slice(-2);
-    var seconds = ('0' + hkDate.getSeconds()).slice(-2);
-    document.getElementById('clock').innerHTML = hours + ':' + minutes;
+      var hours = ('0' + hkDate.getHours()).slice(-2);
+      var minutes = ('0' + hkDate.getMinutes()).slice(-2);
+      var seconds = ('0' + hkDate.getSeconds()).slice(-2);
+      document.getElementById('clock').innerHTML = hours + ':' + minutes;
 
-    var days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    var dateStr = hkDate.getFullYear() + '年' + (hkDate.getMonth() + 1) + '月' + hkDate.getDate() + '日 ' + days[hkDate.getDay()];
-    document.getElementById('full-date').innerHTML = dateStr;
-    document.getElementById('last-updated').innerHTML = hours + ':' + minutes + ':' + seconds;
+      var days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      var dateStr = hkDate.getFullYear() + '年' + (hkDate.getMonth() + 1) + '月' + hkDate.getDate() + '日 ' + days[hkDate.getDay()];
+      document.getElementById('full-date').innerHTML = dateStr;
+      document.getElementById('last-updated').innerHTML = hours + ':' + minutes + ':' + seconds;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
 
-    // 2. 請求函數
+    // ====================================================
+    // 2. 通用資料請求函數
+    // ====================================================
     function fetchJSON(url, callback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
@@ -295,69 +310,116 @@
       xhr.send();
     }
 
-    // 3. 天氣 API
-    fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
-      if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
-        document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
-      }
-      if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
-        document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
-      }
-    });
+    // ====================================================
+    // 3. 香港天文台天氣 API（每 3 分鐘背景更新）
+    // ====================================================
+    function updateWeather() {
+      fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
+        if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
+          document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
+        }
+        if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
+          document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
+        }
+      });
+    }
+    updateWeather();
+    setInterval(updateWeather, 180000);
 
-    // 4. 輕鐵 API（屯門碼頭 001）
-    fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
-      var container = document.getElementById('train-container');
-      if (data.status === 1 && data.platform_list) {
-        var html = '';
-        var count = 0;
-        for (var i = 0; i < data.platform_list.length; i++) {
-          var p = data.platform_list[i];
-          if (p.route_list) {
-            for (var j = 0; j < p.route_list.length; j++) {
-              if (count >= 3) break;
-              var train = p.route_list[j];
-              var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
-              html += '<li class="transit-item">' +
-                '<span class="badge">' + train.route_no + '</span>' +
-                '<span class="dest">' + train.dest_ch + '</span>' +
-                '<span class="eta">' + eta + '</span>' +
-                '</li>';
-              count++;
+    // ====================================================
+    // 4. 港鐵輕鐵即時班次（每 15 秒背景即時更新）
+    // ====================================================
+    function updateLightRail() {
+      fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
+        var container = document.getElementById('train-container');
+        if (data.status === 1 && data.platform_list) {
+          var html = '';
+          var count = 0;
+          for (var i = 0; i < data.platform_list.length; i++) {
+            var p = data.platform_list[i];
+            if (p.route_list) {
+              for (var j = 0; j < p.route_list.length; j++) {
+                if (count >= 3) break;
+                var train = p.route_list[j];
+                var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
+                html += '<li class="transit-item">' +
+                  '<span class="badge">' + train.route_no + '</span>' +
+                  '<span class="dest">' + train.dest_ch + '</span>' +
+                  '<span class="eta">' + eta + '</span>' +
+                  '</li>';
+                count++;
+              }
             }
           }
+          if (count > 0) container.innerHTML = html;
         }
-        if (count > 0) container.innerHTML = html;
-      }
-    });
+      });
+    }
+    updateLightRail();
+    setInterval(updateLightRail, 15000);
 
-    // 5. 九巴 API（屯門碼頭總站開出）
-    fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/TU03-T-1000-0', function(res) {
+    // ====================================================
+    // 5. 九巴即時班次（每 15 秒背景即時更新）
+    // 抓取 59M / 59X / 259D 屯門碼頭總站首站開出班次
+    // ====================================================
+    function updateBus() {
+      var routes = ['59M', '59X', '259D'];
+      var buses = [];
+      var completed = 0;
+
+      for (var k = 0; k < routes.length; k++) {
+        (function(r) {
+          fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/' + r + '/1', function(res) {
+            if (res && res.data) {
+              for (var m = 0; m < res.data.length; m++) {
+                var item = res.data[m];
+                // 篩選出從總站開出 (seq == 1 或 service_type == 1) 且有 eta 的班次
+                if (item.eta && (item.dir === 'O' || item.seq === 1)) {
+                  buses.push(item);
+                }
+              }
+            }
+            completed++;
+            if (completed === routes.length) {
+              renderBusList(buses);
+            }
+          });
+        })(routes[k]);
+      }
+    }
+
+    function renderBusList(list) {
+      if (!list || list.length === 0) return;
       var container = document.getElementById('bus-container');
-      if (res && res.data) {
-        var html = '';
-        var count = 0;
-        var nowTime = new Date().getTime();
+      var nowTime = new Date().getTime();
 
-        for (var i = 0; i < res.data.length; i++) {
-          var item = res.data[i];
-          if (item.eta && count < 3) {
-            var etaTime = new Date(item.eta).getTime();
-            var diffMin = Math.round((etaTime - nowTime) / 60000);
-            if (diffMin >= 0) {
-              var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
-              html += '<li class="transit-item">' +
-                '<span class="bus-badge">' + item.route + '</span>' +
-                '<span class="dest">' + item.dest_tc + '</span>' +
-                '<span class="eta">' + etaText + '</span>' +
-                '</li>';
-              count++;
-            }
-          }
+      // 按照到站時間前後排序
+      list.sort(function(a, b) {
+        return new Date(a.eta).getTime() - new Date(b.eta).getTime();
+      });
+
+      var html = '';
+      var count = 0;
+      for (var i = 0; i < list.length; i++) {
+        if (count >= 3) break;
+        var b = list[i];
+        var etaTime = new Date(b.eta).getTime();
+        var diffMin = Math.round((etaTime - nowTime) / 60000);
+        if (diffMin >= 0) {
+          var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
+          html += '<li class="transit-item">' +
+            '<span class="bus-badge">' + b.route + '</span>' +
+            '<span class="dest">' + (b.dest_tc || b.dest_sc || '市區') + '</span>' +
+            '<span class="eta">' + etaText + '</span>' +
+            '</li>';
+          count++;
         }
-        if (count > 0) container.innerHTML = html;
       }
-    });
+      if (count > 0) container.innerHTML = html;
+    }
+
+    updateBus();
+    setInterval(updateBus, 15000);
   </script>
 </body>
 </html>
