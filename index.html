@@ -5,24 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>E-Paper Dashboard</title>
   <style>
-    /* 針對墨水屏的黑白高對比排版 */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       background-color: #ffffff;
       color: #000000;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      padding: 20px;
+    }
+
+    /* 關鍵：將整個儀表板旋轉 90 度適配 Kindle 橫放 */
+    .dashboard-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100vh;  /* 寬高對調 */
+      height: 100vw;
+      transform: translate(-50%, -50%) rotate(90deg);
+      transform-origin: center center;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
+
     header {
       display: flex;
       justify-content: space-between;
@@ -35,12 +47,12 @@
       flex-direction: column;
     }
     .time {
-      font-size: 52px;
+      font-size: 56px;
       font-weight: 900;
       line-height: 1;
     }
     .date {
-      font-size: 19px;
+      font-size: 20px;
       font-weight: bold;
       margin-top: 6px;
     }
@@ -48,12 +60,12 @@
       text-align: right;
     }
     .temp {
-      font-size: 46px;
+      font-size: 50px;
       font-weight: 900;
       line-height: 1;
     }
     .weather-desc {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: bold;
       margin-top: 6px;
     }
@@ -61,7 +73,7 @@
     main {
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
-      gap: 18px;
+      gap: 20px;
       flex: 1;
       margin-top: 16px;
       min-height: 0;
@@ -77,7 +89,7 @@
       overflow: hidden;
     }
     .panel-title {
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 900;
       border-bottom: 2px solid #000000;
       padding-bottom: 6px;
@@ -105,16 +117,16 @@
       color: #ffffff;
       padding: 2px 8px;
       border-radius: 4px;
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 900;
     }
     .dest {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: bold;
       margin-left: 8px;
     }
     .eta {
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 900;
     }
 
@@ -132,15 +144,15 @@
       padding-left: 8px;
     }
     .agenda-time {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
     }
     .agenda-text {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: bold;
     }
 
-    /* 圖片輪播展示區 */
+    /* 圖片輪播區 */
     .image-container {
       margin-top: auto;
       padding-top: 10px;
@@ -156,7 +168,6 @@
       object-fit: contain;
       filter: grayscale(100%) contrast(120%);
       border-radius: 4px;
-      transition: opacity 0.3s ease-in-out;
     }
 
     footer {
@@ -169,66 +180,64 @@
 </head>
 <body>
 
-  <!-- 頂部：時間與天氣 -->
-  <header>
-    <div class="date-time">
-      <div class="time" id="clock">--:--</div>
-      <div class="date" id="full-date">載入中...</div>
-    </div>
-    <div class="weather-box">
-      <div class="temp" id="weather-temp">--°C</div>
-      <div class="weather-desc" id="weather-desc">正在獲取天氣...</div>
-    </div>
-  </header>
-
-  <!-- 中間：輕鐵資訊 & (Agenda + 輪播圖片) -->
-  <main>
-    <!-- 左側：輕鐵面板 -->
-    <div class="panel">
-      <div class="panel-title">
-        <span>輕鐵即時班次</span>
-        <span id="station-name" style="font-size: 13px; align-self: center;">屯門碼頭</span>
+  <div class="dashboard-wrapper">
+    <!-- 頂部：時間與天氣 -->
+    <header>
+      <div class="date-time">
+        <div class="time" id="clock">--:--</div>
+        <div class="date" id="full-date">載入中...</div>
       </div>
-      <ul class="train-list" id="train-container">
-        <li class="train-item">載入班次中...</li>
-      </ul>
-    </div>
-
-    <!-- 右側：Agenda 與圖片面板 -->
-    <div class="panel">
-      <div class="panel-title">今日行程 (Agenda)</div>
-      
-      <!-- Agenda 列表 -->
-      <ul class="agenda-list" id="agenda-container">
-        <li class="agenda-item">
-          <span class="agenda-time">09:30 - 10:30</span>
-          <span class="agenda-text">團隊早會 / 項目同步</span>
-        </li>
-        <li class="agenda-item">
-          <span class="agenda-time">14:00 - 15:30</span>
-          <span class="agenda-text">文檔本地化校對</span>
-        </li>
-        <li class="agenda-item">
-          <span class="agenda-time">19:00</span>
-          <span class="agenda-text">住家晚飯 & 閱讀</span>
-        </li>
-      </ul>
-
-      <!-- Agenda 下方的輪播圖片區域 -->
-      <div class="image-container">
-        <img id="slideshow-img" src="" alt="Dashboard Slideshow" class="dashboard-img">
+      <div class="weather-box">
+        <div class="temp" id="weather-temp">--°C</div>
+        <div class="weather-desc" id="weather-desc">正在獲取天氣...</div>
       </div>
-    </div>
-  </main>
+    </header>
 
-  <footer>
-    資料更新時間：<span id="last-updated">--:--:--</span>
-  </footer>
+    <!-- 中間：輕鐵資訊 & Agenda -->
+    <main>
+      <!-- 左側：輕鐵面板 -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>輕鐵即時班次</span>
+          <span id="station-name" style="font-size: 14px; align-self: center;">屯門碼頭</span>
+        </div>
+        <ul class="train-list" id="train-container">
+          <li class="train-item">載入班次中...</li>
+        </ul>
+      </div>
+
+      <!-- 右側：Agenda 與圖片面板 -->
+      <div class="panel">
+        <div class="panel-title">今日行程 (Agenda)</div>
+        
+        <ul class="agenda-list" id="agenda-container">
+          <li class="agenda-item">
+            <span class="agenda-time">09:30 - 10:30</span>
+            <span class="agenda-text">團隊早會 / 項目同步</span>
+          </li>
+          <li class="agenda-item">
+            <span class="agenda-time">14:00 - 15:30</span>
+            <span class="agenda-text">文檔本地化校對</span>
+          </li>
+          <li class="agenda-item">
+            <span class="agenda-time">19:00</span>
+            <span class="agenda-text">住家晚飯 & 閱讀</span>
+          </li>
+        </ul>
+
+        <div class="image-container">
+          <img id="slideshow-img" src="" alt="Dashboard Slideshow" class="dashboard-img">
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      資料更新時間：<span id="last-updated">--:--:--</span>
+    </footer>
+  </div>
 
   <script>
-    // ==========================================
-    // 0. 圖片輪播清單（請將檔名替換為 yay 資料夾裡的實際檔案）
-    // ==========================================
+    // 0. 圖片清單
     const myImages = [
       "img1.png",
       "img2.png",
@@ -241,18 +250,13 @@
     function rotateImage() {
       if (myImages.length === 0) return;
       slideImgElement.src = myImages[currentImgIndex];
-      // 循環切換索引
       currentImgIndex = (currentImgIndex + 1) % myImages.length;
     }
 
-    // 初始化先載入第一張
     rotateImage();
-    // 每 5000 毫秒（5 秒）切換一次圖片
     setInterval(rotateImage, 5000);
 
-    // ==========================================
     // 1. 更新本地時間與日期
-    // ==========================================
     function updateClock() {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
@@ -267,9 +271,7 @@
       document.getElementById('last-updated').innerText = `${hours}:${minutes}:${seconds}`;
     }
 
-    // ==========================================
     // 2. 獲取香港天文台即時天氣
-    // ==========================================
     async function fetchWeather() {
       try {
         const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc');
@@ -289,9 +291,7 @@
       }
     }
 
-    // ==========================================
     // 3. 獲取港鐵輕鐵即時到站數據
-    // ==========================================
     async function fetchLightRail(stationId = '001') {
       const container = document.getElementById('train-container');
       try {
@@ -335,15 +335,13 @@
       }
     }
 
-    // 初始化執行
     updateClock();
     fetchWeather();
     fetchLightRail('001');
 
-    // 定時器
     setInterval(updateClock, 1000);
-    setInterval(fetchWeather, 300000); // 天氣 5 分鐘更新一次
-    setInterval(() => fetchLightRail('001'), 30000); // 輕鐵 30 秒更新一次
+    setInterval(fetchWeather, 300000);
+    setInterval(() => fetchLightRail('001'), 30000);
   </script>
 </body>
 </html>
