@@ -2,10 +2,11 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>E-Paper Dashboard</title>
   <style>
     * {
+      -webkit-box-sizing: border-box;
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -17,181 +18,156 @@
       background-color: #ffffff;
       color: #000000;
       overflow: hidden;
-      position: relative;
+      font-family: sans-serif;
     }
 
-    /* Kindle WebKit 專用 90 度旋轉定位 */
+    /* Kindle 90度旋轉定位 */
     .dashboard-wrapper {
       position: absolute;
       top: 0;
       left: 100%;
-      width: 760px;   /* 橫向後的寬度（即原本螢幕高度） */
-      height: 580px;  /* 橫向後的高度（即原本螢幕寬度） */
-      
-      /* 同時加上 -webkit 前綴以支援 Kindle 舊瀏覽器 */
-      -webkit-transform-origin: top left;
-      transform-origin: top left;
-      
+      width: 740px;
+      height: 540px;
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0;
       -webkit-transform: rotate(90deg);
       transform: rotate(90deg);
-
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+    .header-bar {
       border-bottom: 4px solid #000000;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
+      height: 70px;
     }
     .date-time {
-      display: flex;
-      flex-direction: column;
+      float: left;
     }
     .time {
-      font-size: 48px;
-      font-weight: 900;
+      font-size: 42px;
+      font-weight: bold;
       line-height: 1;
     }
     .date {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
       margin-top: 4px;
     }
     .weather-box {
+      float: right;
       text-align: right;
     }
     .temp {
-      font-size: 44px;
-      font-weight: 900;
+      font-size: 38px;
+      font-weight: bold;
       line-height: 1;
     }
     .weather-desc {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
       margin-top: 4px;
     }
-    
-    main {
-      display: flex;
-      gap: 16px;
-      flex: 1;
-      margin-top: 12px;
-      height: 420px;
+
+    .main-content {
+      clear: both;
+      margin-top: 14px;
+      height: 410px;
     }
     
     .panel-left {
-      flex: 1.1;
+      float: left;
+      width: 52%;
+      height: 100%;
       border: 3px solid #000000;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
+      border-radius: 6px;
+      padding: 10px;
     }
 
     .panel-right {
-      flex: 0.9;
+      float: right;
+      width: 45%;
+      height: 100%;
       border: 3px solid #000000;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      border-radius: 6px;
+      padding: 10px;
+      position: relative;
     }
 
     .panel-title {
-      font-size: 18px;
-      font-weight: 900;
+      font-size: 17px;
+      font-weight: bold;
       border-bottom: 2px solid #000000;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
       margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
     }
     
-    /* 輕鐵到站列表 */
-    .train-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    /* 輕鐵列表 */
     .train-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px dashed #666666;
-      padding-bottom: 4px;
+      list-style: none;
+      border-bottom: 1px dashed #444444;
+      padding: 5px 0;
+      font-size: 15px;
+      height: 32px;
+      line-height: 22px;
     }
     .route-badge {
       background-color: #000000;
       color: #ffffff;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-size: 15px;
     }
     .dest {
-      font-size: 16px;
       font-weight: bold;
-      margin-left: 6px;
+      margin-left: 4px;
     }
     .eta {
-      font-size: 18px;
-      font-weight: 900;
+      float: right;
+      font-weight: bold;
+      font-size: 16px;
     }
 
-    /* 今日 Agenda 列表 */
-    .agenda-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    /* Agenda 列表 */
     .agenda-item {
-      display: flex;
-      flex-direction: column;
-      border-left: 4px solid #000000;
+      list-style: none;
+      border-left: 3px solid #000000;
       padding-left: 6px;
+      margin-bottom: 6px;
     }
     .agenda-time {
       font-size: 12px;
       font-weight: bold;
     }
     .agenda-text {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
     }
 
     /* 圖片輪播區 */
     .image-container {
-      margin-top: 8px;
-      padding-top: 8px;
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      height: 130px;
       border-top: 2px dashed #000000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 120px;
+      padding-top: 6px;
+      text-align: center;
     }
     .dashboard-img {
       max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      filter: grayscale(100%) contrast(120%);
-      -webkit-filter: grayscale(100%) contrast(120%);
-      border-radius: 4px;
+      max-height: 120px;
+      -webkit-filter: grayscale(100%);
+      filter: grayscale(100%);
     }
 
-    footer {
-      font-size: 12px;
+    .footer-bar {
+      position: absolute;
+      bottom: 4px;
+      right: 16px;
+      font-size: 11px;
       font-weight: bold;
-      text-align: right;
-      margin-top: 6px;
     }
   </style>
 </head>
@@ -199,158 +175,159 @@
 
   <div class="dashboard-wrapper">
     <!-- 頂部：時間與天氣 -->
-    <header>
+    <div class="header-bar">
       <div class="date-time">
         <div class="time" id="clock">--:--</div>
         <div class="date" id="full-date">載入中...</div>
       </div>
       <div class="weather-box">
         <div class="temp" id="weather-temp">--°C</div>
-        <div class="weather-desc" id="weather-desc">正在獲取天氣...</div>
+        <div class="weather-desc" id="weather-desc">更新中...</div>
       </div>
-    </header>
+    </div>
 
-    <!-- 中間：輕鐵資訊 & Agenda -->
-    <main>
-      <!-- 左側：輕鐵面板 -->
+    <!-- 中間主要內容 -->
+    <div class="main-content">
+      <!-- 左側輕鐵 -->
       <div class="panel-left">
-        <div class="panel-title">
-          <span>輕鐵即時班次</span>
-          <span id="station-name" style="font-size: 13px; align-self: center;">屯門碼頭</span>
-        </div>
-        <ul class="train-list" id="train-container">
+        <div class="panel-title">輕鐵即時班次（屯門碼頭）</div>
+        <ul id="train-container" style="padding: 0;">
           <li class="train-item">載入班次中...</li>
         </ul>
       </div>
 
-      <!-- 右側：Agenda 與圖片面板 -->
+      <!-- 右側 Agenda 與圖片 -->
       <div class="panel-right">
-        <div>
-          <div class="panel-title">今日行程 (Agenda)</div>
-          <ul class="agenda-list" id="agenda-container">
-            <li class="agenda-item">
-              <span class="agenda-time">09:30 - 10:30</span>
-              <span class="agenda-text">團隊早會 / 項目同步</span>
-            </li>
-            <li class="agenda-item">
-              <span class="agenda-time">14:00 - 15:30</span>
-              <span class="agenda-text">文檔本地化校對</span>
-            </li>
-            <li class="agenda-item">
-              <span class="agenda-time">19:00</span>
-              <span class="agenda-text">住家晚飯 & 閱讀</span>
-            </li>
-          </ul>
-        </div>
+        <div class="panel-title">今日行程 (Agenda)</div>
+        <ul style="padding: 0;">
+          <li class="agenda-item">
+            <div class="agenda-time">09:30 - 10:30</div>
+            <div class="agenda-text">團隊早會 / 項目同步</div>
+          </li>
+          <li class="agenda-item">
+            <div class="agenda-time">14:00 - 15:30</div>
+            <div class="agenda-text">文檔本地化校對</div>
+          </li>
+          <li class="agenda-item">
+            <div class="agenda-time">19:00</div>
+            <div class="agenda-text">住家晚飯 & 閱讀</div>
+          </li>
+        </ul>
 
         <div class="image-container">
           <img id="slideshow-img" src="" alt="Slideshow" class="dashboard-img">
         </div>
       </div>
-    </main>
+    </div>
 
-    <footer>
-      資料更新時間：<span id="last-updated">--:--:--</span>
-    </footer>
+    <div class="footer-bar">
+      更新時間：<span id="last-updated">--:--:--</span>
+    </div>
   </div>
 
   <script>
-    const myImages = [
+    // 0. 圖片陣列（使用純 ES5 語法）
+    var myImages = [
       "img1.png",
       "img2.png",
       "img3.png"
     ];
-
-    let currentImgIndex = 0;
-    const slideImgElement = document.getElementById('slideshow-img');
+    var currentImgIndex = 0;
+    var slideImgElement = document.getElementById('slideshow-img');
 
     function rotateImage() {
       if (myImages.length === 0) return;
       slideImgElement.src = myImages[currentImgIndex];
       currentImgIndex = (currentImgIndex + 1) % myImages.length;
     }
-
     rotateImage();
     setInterval(rotateImage, 5000);
 
+    // 1. 本地時鐘
     function updateClock() {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('clock').innerText = hours + ':' + minutes;
+      var now = new Date();
+      var hours = ('0' + now.getHours()).slice(-2);
+      var minutes = ('0' + now.getMinutes()).slice(-2);
+      var seconds = ('0' + now.getSeconds()).slice(-2);
+      document.getElementById('clock').innerHTML = hours + ':' + minutes;
 
-      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-      const dateStr = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + days[now.getDay()];
-      document.getElementById('full-date').innerText = dateStr;
-      
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById('last-updated').innerText = hours + ':' + minutes + ':' + seconds;
+      var days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      var dateStr = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + days[now.getDay()];
+      document.getElementById('full-date').innerHTML = dateStr;
+      document.getElementById('last-updated').innerHTML = hours + ':' + minutes + ':' + seconds;
     }
-
-    async function fetchWeather() {
-      try {
-        const res = await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc');
-        const data = await res.json();
-        
-        if (data.temperature && data.temperature.data.length > 0) {
-          document.getElementById('weather-temp').innerText = data.temperature.data[0].value + '°C';
-        }
-        if (data.humidity && data.humidity.data.length > 0) {
-          document.getElementById('weather-desc').innerText = '相對濕度 ' + data.humidity.data[0].value + '%';
-        }
-      } catch (err) {
-        document.getElementById('weather-desc').innerText = '天氣載入失敗';
-      }
-    }
-
-    async function fetchLightRail(stationId) {
-      if (!stationId) stationId = '001';
-      const container = document.getElementById('train-container');
-      try {
-        const url = 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.status === 1 && data.platform_list) {
-          container.innerHTML = '';
-          let count = 0;
-
-          for (let i = 0; i < data.platform_list.length; i++) {
-            const platform = data.platform_list[i];
-            if (platform.route_list) {
-              for (let j = 0; j < platform.route_list.length; j++) {
-                if (count >= 5) break;
-                const train = platform.route_list[j];
-                const li = document.createElement('li');
-                li.className = 'train-item';
-                const etaText = train.time_en === '-' ? '即將抵達' : train.time_ch;
-                
-                li.innerHTML = '<div style="display: flex; align-items: center;">' +
-                  '<span class="route-badge">' + train.route_no + '</span>' +
-                  '<span class="dest">' + train.dest_ch + '</span>' +
-                  '</div>' +
-                  '<span class="eta">' + etaText + '</span>';
-                container.appendChild(li);
-                count++;
-              }
-            }
-          }
-
-          if (count === 0) {
-            container.innerHTML = '<li class="train-item">暫無即時班次資料</li>';
-          }
-        }
-      } catch (err) {
-        container.innerHTML = '<li class="train-item">輕鐵資料載入失敗</li>';
-      }
-    }
-
     updateClock();
-    fetchWeather();
-    fetchLightRail('001');
-
     setInterval(updateClock, 1000);
+
+    // 2. 天氣 (XMLHttpRequest)
+    function fetchWeather() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
+                document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
+              }
+              if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
+                document.getElementById('weather-desc').innerHTML = '濕度 ' + data.humidity.data[0].value + '%';
+              }
+            } catch(e) {}
+          } else {
+            document.getElementById('weather-desc').innerHTML = '天氣載入失敗';
+          }
+        }
+      };
+      xhr.send();
+    }
+    fetchWeather();
     setInterval(fetchWeather, 300000);
+
+    // 3. 輕鐵即時班次
+    function fetchLightRail(stationId) {
+      if (!stationId) stationId = '001';
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=' + stationId, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          var container = document.getElementById('train-container');
+          if (xhr.status === 200) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              if (data.status === 1 && data.platform_list) {
+                var html = '';
+                var count = 0;
+                for (var i = 0; i < data.platform_list.length; i++) {
+                  var p = data.platform_list[i];
+                  if (p.route_list) {
+                    for (var j = 0; j < p.route_list.length; j++) {
+                      if (count >= 5) break;
+                      var train = p.route_list[j];
+                      var eta = train.time_en === '-' ? '即將抵達' : train.time_ch;
+                      html += '<li class="train-item">' +
+                        '<span class="route-badge">' + train.route_no + '</span>' +
+                        '<span class="dest">' + train.dest_ch + '</span>' +
+                        '<span class="eta">' + eta + '</span>' +
+                        '</li>';
+                      count++;
+                    }
+                  }
+                }
+                container.innerHTML = count > 0 ? html : '<li class="train-item">暫無即時班次</li>';
+              }
+            } catch(e) {
+              container.innerHTML = '<li class="train-item">解析班次失敗</li>';
+            }
+          } else {
+            container.innerHTML = '<li class="train-item">輕鐵資料載入失敗</li>';
+          }
+        }
+      };
+      xhr.send();
+    }
+    fetchLightRail('001');
     setInterval(function() { fetchLightRail('001'); }, 30000);
   </script>
 </body>
