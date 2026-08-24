@@ -79,9 +79,6 @@
       float: left;
       width: 50%;
       height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
 
     .sub-panel {
@@ -224,7 +221,7 @@
 
         <!-- 巴士 (59M/59X 屯門碼頭開出) -->
         <div class="sub-panel" style="margin-top: 10px;">
-          <div class="panel-title">九巴即時班次（屯門碼頭總站）</div>
+          <div class="panel-title">九巴即時班次（屯門碼頭開出）</div>
           <ul id="bus-container" class="transit-list">
             <li class="transit-item">班次搜尋中...</li>
           </ul>
@@ -298,12 +295,12 @@
     setInterval(updateClock, 1000);
 
     // ====================================================
-    // 2. 通用抓取 (使用 AllOrigins 專屬解析)
+    // 2. 直連官方 API 請求工具（原生支援 CORS，超快直連）
     // ====================================================
-    function fetchJSON(url, callback) {
-      var proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+    function directFetchJSON(url, callback) {
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', proxy, true);
+      xhr.open('GET', url, true);
+      xhr.timeout = 8000;
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
           try {
@@ -316,10 +313,10 @@
     }
 
     // ====================================================
-    // 3. 天氣 API
+    // 3. 香港天文台天氣 API
     // ====================================================
     function fetchWeather() {
-      fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
+      directFetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
         if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
           document.getElementById('weather-temp').innerHTML = data.temperature.data[0].value + '°C';
         }
@@ -329,13 +326,13 @@
       });
     }
     fetchWeather();
-    setInterval(fetchWeather, 300000);
+    setInterval(fetchWeather, 300000); // 5 分鐘更新一次
 
     // ====================================================
-    // 4. 輕鐵 API（顯示 3 班，節省空間給巴士）
+    // 4. 港鐵輕鐵 API（屯門碼頭 001）
     // ====================================================
     function fetchLightRail() {
-      fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
+      directFetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
         var container = document.getElementById('train-container');
         if (data.status === 1 && data.platform_list) {
           var html = '';
@@ -361,42 +358,68 @@
       });
     }
     fetchLightRail();
-    setInterval(fetchLightRail, 30000);
+    setInterval(fetchLightRail, 30000); // 30 秒更新一次
 
     // ====================================================
-    // 5. 九巴 API（屯門碼頭總站 59M / 59X 開出）
+    // 5. 九巴 API（59M / 59X 屯門碼頭開出班次）
     // ====================================================
-    function fetchBus() {
-      // 屯門碼頭總站 Stop ID: TU03-T-1000-0
-      fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/TU03-T-1000-0', function(res) {
-        var container = document.getElementById('bus-container');
-        if (res && res.data) {
-          var html = '';
-          var count = 0;
-          var nowTime = new Date().getTime();
+    var busData59M = [];
+    var busData59X = [];
 
-          for (var i = 0; i < res.data.length; i++) {
-            var item = res.data[i];
-            // 只取 59M 及 59X 的最近班次
-            if ((item.route === '59M' || item.route === '59X') && item.eta && count < 3) {
-              var etaTime = new Date(item.eta).getTime();
-              var diffMin = Math.round((etaTime - nowTime) / 60000);
-              var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
+    function renderBuses() {
+      var allBuses = busData59M.concat(busData59X);
+      // 根據 ETA 時間排序
+      allBuses.sort(function(a, b) {
+        return new Date(a.eta).getTime() - new Date(b.eta).getTime();
+      });
 
-              html += '<li class="transit-item">' +
-                '<span class="bus-badge">' + item.route + '</span>' +
-                '<span class="dest">' + item.dest_tc + '</span>' +
-                '<span class="eta">' + etaText + '</span>' +
-                '</li>';
-              count++;
-            }
+      var container = document.getElementById('bus-container');
+      if (allBuses.length > 0) {
+        var html = '';
+        var nowTime = new Date().getTime();
+        var count = 0;
+        for (var i = 0; i < allBuses.length; i++) {
+          if (count >= 3) break;
+          var item = allBuses[i];
+          if (item.eta) {
+            var etaTime = new Date(item.eta).getTime();
+            var diffMin = Math.round((etaTime - nowTime) / 60000);
+            var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
+            html += '<li class="transit-item">' +
+              '<span class="bus-badge">' + item.route + '</span>' +
+              '<span class="dest">' + item.dest_tc + '</span>' +
+              '<span class="eta">' + etaText + '</span>' +
+              '</li>';
+            count++;
           }
-          if (count > 0) container.innerHTML = html;
+        }
+        if (count > 0) container.innerHTML = html;
+      }
+    }
+
+    function fetchBus() {
+      // 抓取 59M 首站開出班次 (dir: O, seq: 1)
+      directFetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/59M/1', function(res) {
+        if (res && res.data) {
+          busData59M = res.data.filter(function(item) {
+            return item.dir === 'O' && item.seq === 1 && item.eta;
+          });
+          renderBuses();
+        }
+      });
+
+      // 抓取 59X 首站開出班次 (dir: O, seq: 1)
+      directFetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/59X/1', function(res) {
+        if (res && res.data) {
+          busData59X = res.data.filter(function(item) {
+            return item.dir === 'O' && item.seq === 1 && item.eta;
+          });
+          renderBuses();
         }
       });
     }
     fetchBus();
-    setInterval(fetchBus, 45000);
+    setInterval(fetchBus, 45000); // 45 秒更新一次
   </script>
 </body>
 </html>
