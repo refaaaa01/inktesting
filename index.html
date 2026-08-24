@@ -221,7 +221,7 @@
 
         <!-- 巴士 -->
         <div class="sub-panel" style="margin-top: 18px;">
-          <div class="panel-title">九巴即時班次（屯門碼頭開出）</div>
+          <div class="panel-title">九巴即時班次（屯門碼頭總站）</div>
           <ul id="bus-container" class="transit-list">
             <li class="transit-item">班次搜尋中...</li>
           </ul>
@@ -254,9 +254,7 @@
   </div>
 
   <script>
-    // ====================================================
     // 0. 圖片輪播
-    // ====================================================
     var myImages = [
       "./img1.png",
       "./img2.png",
@@ -271,9 +269,7 @@
     rotateImg();
     setInterval(rotateImg, 10000);
 
-    // ====================================================
     // 1. 香港時區時鐘（UTC+8）
-    // ====================================================
     function updateClock() {
       var d = new Date();
       var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
@@ -292,9 +288,7 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    // ====================================================
     // 2. 通用請求工具
-    // ====================================================
     function fetchJSON(url, callback) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
@@ -309,9 +303,7 @@
       xhr.send();
     }
 
-    // ====================================================
-    // 3. 香港天文台天氣 API
-    // ====================================================
+    // 3. 天氣 API
     function updateWeather() {
       fetchJSON('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc', function(data) {
         if (data.temperature && data.temperature.data && data.temperature.data.length > 0) {
@@ -325,9 +317,7 @@
     updateWeather();
     setInterval(updateWeather, 180000);
 
-    // ====================================================
-    // 4. 港鐵輕鐵即時班次（每 15 秒更新）
-    // ====================================================
+    // 4. 輕鐵即時班次（每 15 秒更新）
     function updateLightRail() {
       fetchJSON('https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001', function(data) {
         var container = document.getElementById('train-container');
@@ -357,46 +347,34 @@
     updateLightRail();
     setInterval(updateLightRail, 15000);
 
-    // ====================================================
-    // 5. 九巴即時班次（精準單站 API，極速秒開）
-    // 查詢屯門碼頭開出的 59M (往荃灣站) 與 59X (往旺角東站)
-    // ====================================================
+    // 5. 九巴即時班次（59M 往荃灣站 / 59X 往旺角東站）
     function updateBus() {
-      var allBuses = [];
-      var queries = [
-        { stop: 'A3ADFCDF8487ADB9', route: '59M', dest: '荃灣站' },
-        { stop: 'A3ADFCDF8487ADB9', route: '59X', dest: '旺角東站' }
-      ];
-      var done = 0;
+      var routes = ['59M', '59X'];
+      var buses = [];
+      var completed = 0;
 
-      for (var k = 0; k < queries.length; k++) {
-        (function(q) {
-          // 精確直連九巴單站 ETA API
-          var url = 'https://data.etabus.gov.hk/v1/transport/kmb/eta/' + q.stop + '/' + q.route + '/1';
-          fetchJSON(url, function(res) {
+      for (var k = 0; k < routes.length; k++) {
+        (function(r) {
+          fetchJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/' + r + '/1', function(res) {
             if (res && res.data) {
               for (var m = 0; m < res.data.length; m++) {
                 var item = res.data[m];
-                // 篩選首站出發且有 ETA 的項目
-                if (item.eta && (item.dir === 'O' || item.seq === 1)) {
-                  allBuses.push({
-                    route: q.route,
-                    dest: item.dest_tc || q.dest,
-                    eta: item.eta
-                  });
+                // 只要是去程（outbound）或第一站，且有 ETA
+                if (item.eta && (item.dir === 'outbound' || item.dir === 'O' || item.seq === 1)) {
+                  buses.push(item);
                 }
               }
             }
-            done++;
-            if (done === queries.length) {
-              renderBuses(allBuses);
+            completed++;
+            if (completed === routes.length) {
+              renderBusList(buses);
             }
           });
-        })(queries[k]);
+        })(routes[k]);
       }
     }
 
-    function renderBuses(list) {
+    function renderBusList(list) {
       var container = document.getElementById('bus-container');
       if (!list || list.length === 0) {
         container.innerHTML = '<li class="transit-item">暫無即時班次</li>';
@@ -404,7 +382,7 @@
       }
       var nowTime = new Date().getTime();
 
-      // 按出發時間先後排序
+      // 按到站時間先後排序
       list.sort(function(a, b) {
         return new Date(a.eta).getTime() - new Date(b.eta).getTime();
       });
@@ -416,17 +394,19 @@
         var b = list[i];
         var etaTime = new Date(b.eta).getTime();
         var diffMin = Math.round((etaTime - nowTime) / 60000);
+        
+        // 只要班次尚未過期
         if (diffMin >= 0) {
           var etaText = diffMin <= 1 ? '即將開出' : diffMin + ' 分鐘';
           html += '<li class="transit-item">' +
             '<span class="bus-badge">' + b.route + '</span>' +
-            '<span class="dest">' + b.dest + '</span>' +
+            '<span class="dest">' + (b.dest_tc || '市區') + '</span>' +
             '<span class="eta">' + etaText + '</span>' +
             '</li>';
           count++;
         }
       }
-      if (count > 0) container.innerHTML = html;
+      container.innerHTML = count > 0 ? html : '<li class="transit-item">暫無即時班次</li>';
     }
 
     updateBus();
